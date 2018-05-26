@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">WDChat</string>
+    <string name="login_button">Login</string>
+    <string name="login_field">Nickname</string>
+    <string name="device_name">DeviceName</string>
+    <string name="device_status">DeviceStatus</string>
+    <string name="login_title">WDChat - Login</string>
+    <string name="connect_title">WDChat - Connecting</string>
+    <string name="connect_banner">Device List</string>
+    <string name="search">Run search</string>
+    <string name="connect">Connect</string>
+    <string name="chat_button">Chat</string>
+</resources>
