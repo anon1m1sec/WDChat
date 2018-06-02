@@ -1,6 +1,5 @@
 package com.evo.wfd.wdchat;
 
-import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 
 public class DialogActivity extends SingleFragmentActivity {

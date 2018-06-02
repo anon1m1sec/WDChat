@@ -11,7 +11,7 @@ public class Database extends SQLiteOpenHelper{
 
     public Database(Context context)
     {
-        super(context,"WDChatDB",null,17);
+        super(context,"WDChatDB",null,21);
     }
 
     @Override

@@ -10,9 +10,12 @@ import android.util.Log;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 
 public class Device {
@@ -29,6 +32,8 @@ public class Device {
     private Socket ClientSocket;
     private Boolean isAdmin;
     private Context cont;
+    private String contra_IP = "";
+    private String SendIP;
     //private boolean nickname_not_send = false;
     //private ChatFragment chatFragment;
     //private Socket mSocket;
@@ -44,10 +49,37 @@ public class Device {
         cont = context;
         try
         {
+            if(!isAdmin) {
+                Enumeration e = NetworkInterface.getNetworkInterfaces();
+                while (e.hasMoreElements()) {
+                    NetworkInterface n = (NetworkInterface) e.nextElement();
+                    Enumeration ee = n.getInetAddresses();
+                    while (ee.hasMoreElements()) {
+                        InetAddress i = (InetAddress) ee.nextElement();
+                        String text = i.getHostAddress();
+                        if (!text.equals(mMainDeviceIP)) {
+                            String[] mass = text.split("\\.");
+                            String[] main_mass = mMainDeviceIP.split("\\.");
+                            Log.d("WDDebug", "length: " + mass.length);
+                            if(mass.length > 2) {
+                                Log.d("WDDebug", mass[0] + " - " + main_mass[0]);
+                                Log.d("WDDebug", mass[1] + " - " + main_mass[1]);
+                                Log.d("WDDebug", mass[2] + " - " + main_mass[2]);
+                                if (mass[0].equals(main_mass[0]) && mass[1].equals(main_mass[1]) && mass[2].equals(main_mass[2]))
+                                    contra_IP = text;
+                            }
+                        }
+                        Log.d("WDDebug", i.getHostAddress());
+                        //System.out.println();
+                    }
+                }
+            }
             if(!isAdmin)
             {
+                SendIP = contra_IP;
                 send(mMainDeviceIP);
             }
+            else SendIP = mMainDeviceIP;
             ss = new ServerSocket(8000);
             runServer();
         }
@@ -56,7 +88,6 @@ public class Device {
             e.printStackTrace();
             Log.d("WDDebug",e.getMessage());
         }
-
     }
 
     private void send(final String ip)
@@ -99,6 +130,20 @@ public class Device {
         }
     }
 
+    private void sendHelloMessageToClient(String ip)
+    {
+        try {
+            Socket ClientSocket = new Socket(ip, 8000);
+            sendNickName(ClientSocket);
+            sendDeviceName(ClientSocket);
+
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+
     /*private void sendInfoToClient()
     {
         sendNickName(mSockets.get(mSockets.size()-1));
@@ -111,6 +156,26 @@ public class Device {
         }
         sendDeviceName(mSockets.get(mSockets.size()-1));
     }*/
+
+    public void SendMessage(String nick,String message)
+    {
+        String ip = null;
+        for(int i=0;i<mNickNames.size();i++)
+        {
+            if(mNickNames.get(i).equals(nick))
+            {
+                ip = mIPs.get(i);
+            }
+        }
+        if(ip != null) {
+            try {
+                Socket s = new Socket(ip, 8000);
+                sendMessage(SendIP + ":" + "message," + message, s);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     public String getDeviceName()
     {
@@ -135,13 +200,15 @@ public class Device {
     private void sendNickName(Socket s)
     {
         Log.d("WDDebug", "nickname sended");
-        sendMessage("nickName," + mNickName,s);
+        /*String text = "";
+        if(!isAdmin && contra_IP != null) text = */
+        sendMessage(SendIP + ":nickName," + mNickName,s);
     }
 
     private void sendDeviceName(Socket s)
     {
         Log.d("WDDebug", "devicename sended");
-        sendMessage("deviceName," + SingletClass.getDeviceName(),s);
+        sendMessage(SendIP + ":deviceName," + SingletClass.getDeviceName(),s);
     }
 
     /*private void sendMainDeviceName(Socket s)
@@ -195,13 +262,14 @@ public class Device {
     {
         Log.d("WDDebug","message: " + message);
         String[] mass = message.split(",");
-        if(mass[0].equals("nickName"))
+        String[] mass1 = mass[0].split(":");
+        if(mass1[1].equals("nickName"))
         {
             //boolean is_exist
             mNickNames.add(mass[1]);
             Log.d("WDDebug","new nickname added");
         }
-        else if(mass[0].equals("deviceName"))
+        else if(mass1[1].equals("deviceName"))
         {
             mDeviceList.add(mass[1]);
             int id = mDeviceList.size()-1;
@@ -213,10 +281,33 @@ public class Device {
                 writeNewAccount(nm,dn);
                 updateUI();
             }
+            sendHelloMessageToClient(mass1[0]);
+            mIPs.add(mass1[0]);
         }
-        else
+        else if(mass1[1].equals("message"))
         {
-
+            String nick = "";
+            for(int i=0;i<mIPs.size();i++)
+            {
+                if(mIPs.get(i).equals(mass1[0])) nick = mNickNames.get(i);
+            }
+            Database dbHelper = new Database(cont);
+            SQLiteDatabase db = null;
+            try {
+                db = dbHelper.getWritableDatabase();
+            } catch (SQLiteException ex) {
+                ex.printStackTrace();
+            }
+            if (db != null) {
+                ContentValues values = new ContentValues();
+                values.put("NICKNAME", nick);
+                values.put("MESSAGE", mass[1]);
+                db.insert("MESSAGES", null, values);
+            }
+            db.close();
+            dbHelper.close();
+            DialogMessageFragment fr = SingletClass.getDialogMessageFragment();
+            if(fr != null) fr.updateUI2(nick);
         }
     }
 
@@ -462,6 +553,7 @@ public class Device {
                 public void run() {
                     try {
                         Socket s = ss.accept();
+                        mSockets.add(s);
                         Thread task1 = new Thread(new Runnable() {
                             @Override
                             public void run() {

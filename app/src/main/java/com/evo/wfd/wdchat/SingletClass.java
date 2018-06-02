@@ -9,6 +9,8 @@ public class SingletClass {
     private static Device device;
     private static String deviceName;
     private static ChatFragment chatFragment;
+    private static String clickableChat;
+    private static DialogMessageFragment fragm;
 
     public static SingletClass get(Context context)
     {
@@ -22,6 +24,26 @@ public class SingletClass {
     private SingletClass(Context context)
     {
 
+    }
+
+    public static void setDialogMessageFragment(DialogMessageFragment fr)
+    {
+        fragm = fr;
+    }
+
+    public static DialogMessageFragment getDialogMessageFragment()
+    {
+        return fragm;
+    }
+
+    public static void setClickableChat(String nick)
+    {
+        clickableChat = nick;
+    }
+
+    public static String getClickableChat()
+    {
+        return clickableChat;
     }
 
     public static  ConnectivityFragment getConnectivityFragment()

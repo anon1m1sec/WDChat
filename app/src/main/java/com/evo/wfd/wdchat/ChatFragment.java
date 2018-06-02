@@ -1,5 +1,6 @@
 package com.evo.wfd.wdchat;
 
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
@@ -110,7 +111,11 @@ public class ChatFragment extends Fragment {
 
         @Override
         public void onClick(View v) {
-            Toast.makeText(getActivity(),mTitleTextView.getText() + " clicked!", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(getActivity(),mTitleTextView.getText() + " clicked!", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(getActivity(), DialogActivity.class);
+            //intent.putExtra("nick",mTitleTextView.getText());
+            SingletClass.setClickableChat(mTitleTextView.getText().toString());
+            startActivity(intent);
             //ChatActivity chat = SingletClass.getChat();
             //chat.updateUI((String)mTitleTextView.getText());
             //updateUI2((String)mTitleTextView.getText());
