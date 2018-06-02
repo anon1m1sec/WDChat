@@ -1,5 +1,8 @@
 package com.evo.wfd.wdchat;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
@@ -18,7 +21,7 @@ public class ChatFragment extends Fragment {
 
     private RecyclerView mRecyclerView;
     private ListAdapter mAdapter;
-    private Device device;
+    //private Device device;
     //private ConnectivityFragment.ListAdapter mAdapter;
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -27,10 +30,10 @@ public class ChatFragment extends Fragment {
         mRecyclerView = (RecyclerView) view.findViewById(R.id.list_recycler_view);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         //Toast.makeText(getActivity()," clicked!", Toast.LENGTH_SHORT).show();
-        device = SingletClass.getDevice();
-        String title = device.getNickName() + "(" + device.getDeviceName() + ")";
+        //device = SingletClass.getDevice();
+        //String title = device.getNickName() + "(" + device.getDeviceName() + ")";
         updateUI();
-        getActivity().setTitle(title);
+        //getActivity().setTitle(title);
         return view;
     }
 
@@ -44,11 +47,44 @@ public class ChatFragment extends Fragment {
 
     private void updateUI()
     {
-        List<String> list = device.getListNickNames();
+        //List<String> list = device.getListNickNames();
+        List<String> list = getMessages();
+        if(list.size() == 0) Toast.makeText(getActivity(),"You don't have chats yet.", Toast.LENGTH_LONG).show();
         //for(int i = 0; i<100;i++) list.add(String.valueOf(i));
         mAdapter = new ListAdapter(list);
         mRecyclerView.setAdapter(mAdapter);
-        //mAdapter.notifyDataSetChanged();
+        mAdapter.notifyDataSetChanged();
+    }
+
+    public ArrayList<String> getMessages()
+    {
+        ArrayList<String> list = new ArrayList<>();
+        Database dbHelper = new Database(getContext());
+        SQLiteDatabase db = null;
+        try
+        {
+            db = dbHelper.getReadableDatabase();
+        }
+        catch (SQLiteException ex)
+        {
+            ex.printStackTrace();
+        }
+        if(db != null) {
+            Cursor cursor = db.query("MESSAGES", new String[]{"NICKNAME","MESSAGE"}, null, null, null, null, null);
+            //result = cursor.getString(0);
+
+            if(cursor.moveToFirst()) {
+                do {
+                    String nick = cursor.getString(cursor.getColumnIndexOrThrow("NICKNAME"));
+                    list.add(nick);
+                    //String device_name = cursor.getString(cursor.getColumnIndexOrThrow("DEVICE_NAME"));
+                    //if(nickname.equals(nick) && device_name.equals(device_name)) return check;
+                } while (cursor.moveToNext());
+            }
+        }
+        db.close();
+        dbHelper.close();
+        return list;
     }
 
     private class ListHolder extends RecyclerView.ViewHolder implements View.OnClickListener

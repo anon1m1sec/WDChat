@@ -7,6 +7,7 @@ import android.net.NetworkInfo;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
+import android.util.Log;
 
 public class WiFiDirectBroadcastReceiver extends BroadcastReceiver{
     private WifiP2pManager mManager;
@@ -27,6 +28,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver{
         WifiP2pDevice device = intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_DEVICE);
         if(device != null) {
             String thisDeviceName = device.deviceName;
+            Log.d("WDDebug","THISDEVICENAME: " + thisDeviceName);
             SingletClass.setDeviceName(thisDeviceName);
         }
         if (WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION.equals(action)) {

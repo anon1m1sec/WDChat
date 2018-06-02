@@ -20,7 +20,7 @@ public class Device {
     private String mMainDeviceIP;
     private String mDeviceName;
     private String mNickName;
-    private List<String> mDeviceList;
+    private List<String> mDeviceList = new ArrayList<>();
     private List<String> mNickNames = new ArrayList<>();
     private List<String> mIPs = new ArrayList<>();
     //private List<ServerSocket> mServerSockets;
@@ -37,6 +37,8 @@ public class Device {
     {
         isAdmin = isadmin;
         mMainDeviceIP = deviceIP;
+        Log.d("WDDebug","DEVICE_IP: " + deviceIP);
+        Log.d("WDDebug","IS_ADMIN: " + isAdmin);
         mDeviceName = deviceName;
         mNickName = getMainAccount(context);
         cont = context;
@@ -67,6 +69,7 @@ public class Device {
                     try {
                         ClientSocket = new Socket(ip, 8000);
                         sendNickName(ClientSocket);
+                        Thread.sleep(1000);
                         sendDeviceName(ClientSocket);
                         Log.d("WDDebug", "nickname message sended");
                     }
@@ -96,6 +99,19 @@ public class Device {
         }
     }
 
+    /*private void sendInfoToClient()
+    {
+        sendNickName(mSockets.get(mSockets.size()-1));
+        try {
+            Thread.sleep(1000);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        sendDeviceName(mSockets.get(mSockets.size()-1));
+    }*/
+
     public String getDeviceName()
     {
         return mDeviceName;
@@ -118,13 +134,21 @@ public class Device {
 
     private void sendNickName(Socket s)
     {
+        Log.d("WDDebug", "nickname sended");
         sendMessage("nickName," + mNickName,s);
     }
 
     private void sendDeviceName(Socket s)
     {
-        sendMessage("deviceName," + mDeviceName,s);
+        Log.d("WDDebug", "devicename sended");
+        sendMessage("deviceName," + SingletClass.getDeviceName(),s);
     }
+
+    /*private void sendMainDeviceName(Socket s)
+    {
+        Log.d("WDDebug", "devicename sended");
+        sendMessage("deviceName," + getMainAccount(cont),s);
+    }*/
 
     private void sendMessage(String message, Socket s)
     {
@@ -157,9 +181,10 @@ public class Device {
             Cursor cursor = db.query("ACCOUNTS", new String[]{"NICKNAME"}, null, null, null, null, null);
             //result = cursor.getString(0);
 
-            if(cursor.moveToFirst()) {
+            //if(cursor.moveToFirst()) {
+                cursor.moveToFirst();
                 result = cursor.getString(cursor.getColumnIndexOrThrow("NICKNAME"));
-            }
+            //}
         }
         db.close();
         dbHelper.close();
@@ -168,6 +193,7 @@ public class Device {
 
     public void readMessage(String message)
     {
+        Log.d("WDDebug","message: " + message);
         String[] mass = message.split(",");
         if(mass[0].equals("nickName"))
         {
@@ -180,7 +206,8 @@ public class Device {
             mDeviceList.add(mass[1]);
             int id = mDeviceList.size()-1;
             String nm = mNickNames.get(id);
-            String dn = mNickNames.get(id);
+            String dn = mDeviceList.get(id);
+            Log.d("WDChat","Message received");
             if(!checkAccount(nm,dn))
             {
                 writeNewAccount(nm,dn);
@@ -196,7 +223,98 @@ public class Device {
     private void updateUI()
     {
         ChatFragment fr = SingletClass.getChatFragment();
-        if(fr != null) fr.updateUI2(getAccounts());
+        if(fr != null) fr.updateUI2(getChatList());
+    }
+
+    private List<String> getChatList()
+    {
+        ArrayList<String> list = new ArrayList<>();
+        Database dbHelper = new Database(cont);
+        SQLiteDatabase db = null;
+        try
+        {
+            db = dbHelper.getReadableDatabase();
+        }
+        catch (SQLiteException ex)
+        {
+            ex.printStackTrace();
+        }
+        if(db != null) {
+            Cursor cursor = db.query("MESSAGES", new String[]{"NICKNAME","MESSAGE"}, null, null, null, null, null);
+            //result = cursor.getString(0);
+            if(cursor.moveToFirst()) {
+                do {
+                    String nick = cursor.getString(cursor.getColumnIndexOrThrow("NICKNAME"));
+                    String message = cursor.getString(cursor.getColumnIndexOrThrow("MESSAGE"));
+                    list.add(nick);
+                } while (cursor.moveToNext());
+            }
+            /*if(cursor.moveToFirst()) {
+                while (cursor.moveToNext()) {
+                    String nick = cursor.getString(cursor.getColumnIndexOrThrow("NICKNAME"));
+                    String message = cursor.getString(cursor.getColumnIndexOrThrow("MESSAGE"));
+                    list.add(nick);
+                    //list.add(nick);
+                }
+            }*/
+        }
+        db.close();
+        dbHelper.close();
+        return list;
+    }
+
+    public void addChat(String nick)
+    {
+        if(!checkChat(nick)) {
+            Database dbHelper = new Database(cont);
+            SQLiteDatabase db = null;
+            try {
+                db = dbHelper.getWritableDatabase();
+            } catch (SQLiteException ex) {
+                ex.printStackTrace();
+            }
+            if (db != null) {
+                ContentValues values = new ContentValues();
+                values.put("NICKNAME", nick);
+                values.put("MESSAGE", "");
+                db.insert("MESSAGES", null, values);
+            }
+            db.close();
+            dbHelper.close();
+        }
+        updateUI();
+    }
+
+    public String getNick(String deviceName)
+    {
+        Database dbHelper = new Database(cont);
+        SQLiteDatabase db = null;
+        try
+        {
+            db = dbHelper.getReadableDatabase();
+        }
+        catch (SQLiteException ex)
+        {
+            ex.printStackTrace();
+        }
+        if(db != null) {
+            Cursor cursor = db.query("CHAT", new String[]{"NICKNAME","DEVICE_NAME"}, null, null, null, null, null);
+            //result = cursor.getString(0);
+            Log.d("WDChat","DB count: " + cursor.getCount());
+            //if(cursor.moveToFirst()) {
+            if(cursor.moveToFirst()) {
+                do {
+                    String nick = cursor.getString(cursor.getColumnIndexOrThrow("NICKNAME"));
+                    String device_name = cursor.getString(cursor.getColumnIndexOrThrow("DEVICE_NAME"));
+                    Log.d("WDChat", "device: " + nick + " " + device_name);
+                    if (device_name.equals(deviceName)) return nick;
+
+                } while (cursor.moveToNext());
+            }
+        }
+        db.close();
+        dbHelper.close();
+        return null;
     }
 
     private List<String> getAccounts()
@@ -217,11 +335,11 @@ public class Device {
             //result = cursor.getString(0);
 
             if(cursor.moveToFirst()) {
-                while (cursor.moveToNext()) {
+                do {
                     String nick = cursor.getString(cursor.getColumnIndexOrThrow("NICKNAME"));
                     String device_name = cursor.getString(cursor.getColumnIndexOrThrow("DEVICE_NAME"));
                     list.add(nick);
-                }
+                } while (cursor.moveToNext());
             }
         }
         db.close();
@@ -231,6 +349,7 @@ public class Device {
 
     private void writeNewAccount(String nickname, String devicename)
     {
+        Log.d("WDChat","Account added: " + nickname + " - " + devicename);
         Database dbHelper = new Database(cont);
         SQLiteDatabase db = null;
         try
@@ -246,9 +365,54 @@ public class Device {
             values.put("NICKNAME",nickname);
             values.put("DEVICE_NAME",devicename);
             db.insert("CHAT",null,values);
+            Log.d("WDChat","Account added! ");
         }
         db.close();
         dbHelper.close();
+    }
+
+    public Boolean checkChat(String nickname)
+    {
+        Boolean check = false;
+        Database dbHelper = new Database(cont);
+        SQLiteDatabase db = null;
+        try
+        {
+            db = dbHelper.getReadableDatabase();
+        }
+        catch (SQLiteException ex)
+        {
+            ex.printStackTrace();
+        }
+        if(db != null) {
+            Cursor cursor = db.query("MESSAGES", new String[]{"NICKNAME"}, null, null, null, null, null);
+            //result = cursor.getString(0);
+
+            if(cursor.moveToFirst()) {
+                do {
+                    String nick = cursor.getString(cursor.getColumnIndexOrThrow("NICKNAME"));
+                    //String device_name = cursor.getString(cursor.getColumnIndexOrThrow("DEVICE_NAME"));
+                    if (nickname.equals(nick)) {
+                        check = true;
+                        return check;
+                    }
+                } while (cursor.moveToNext());
+            }
+            /*if(cursor.moveToFirst()) {
+                while (cursor.moveToNext()) {
+                    String nick = cursor.getString(cursor.getColumnIndexOrThrow("NICKNAME"));
+                    //String device_name = cursor.getString(cursor.getColumnIndexOrThrow("DEVICE_NAME"));
+                    if(nickname.equals(nick))
+                    {
+                        check = true;
+                        return check;
+                    }
+                }
+            }*/
+        }
+        db.close();
+        dbHelper.close();
+        return check;
     }
 
 
@@ -268,14 +432,21 @@ public class Device {
         if(db != null) {
             Cursor cursor = db.query("CHAT", new String[]{"NICKNAME","DEVICE_NAME"}, null, null, null, null, null);
             //result = cursor.getString(0);
-
             if(cursor.moveToFirst()) {
-                while (cursor.moveToNext()) {
+                do {
                     String nick = cursor.getString(cursor.getColumnIndexOrThrow("NICKNAME"));
                     String device_name = cursor.getString(cursor.getColumnIndexOrThrow("DEVICE_NAME"));
-                    if(nickname.equals(nick) && device_name.equals(device_name)) return check;
-                }
+                    if (nickname.equals(nick) && device_name.equals(devicename)) {
+                        check = true;
+                        return check;
+                    }
+                } while (cursor.moveToNext());
             }
+            /*if(cursor.moveToFirst()) {
+                while (cursor.moveToNext()) {
+
+                }
+            }*/
         }
         db.close();
         dbHelper.close();
@@ -290,11 +461,19 @@ public class Device {
                 @Override
                 public void run() {
                     try {
+                        Socket s = ss.accept();
+                        Thread task1 = new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                runServer();
+                            }
+                        });
+                        task1.start();
                         while (true) {
-                            Socket s = ss.accept();
-                            if(isAdmin) send(s.getInetAddress().getHostAddress());
-                            mSockets.add(s);
-                            mIPs.add(s.getInetAddress().getHostAddress());
+                            //if(isAdmin) send(s.getRemoteSocketAddress().toString());
+                            //mSockets.add(s);
+                            //if(isAdmin) sendInfoToClient();
+                            //mIPs.add(s.getInetAddress().getHostAddress());
                             InputStream sin = s.getInputStream();
                             byte buf[] = new byte[64 * 1024];
                             int r = sin.read(buf);
@@ -313,6 +492,7 @@ public class Device {
                 }
             });
             task.start();
+            //runServer();
             Log.d("WDDebug","Server is running");
             //ServerSocket ss = new ServerSocket(8000);
             //mServerSockets.add(ss);

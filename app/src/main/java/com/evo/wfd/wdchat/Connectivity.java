@@ -1,9 +1,14 @@
 package com.evo.wfd.wdchat;
 
 import android.content.BroadcastReceiver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
+import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiManager;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
@@ -26,6 +31,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,11 +49,15 @@ public class Connectivity extends Fragment implements PeerListListener, Connecti
     TextView deviceInfo;
     TextView deviceInfoStatus;
     Button chatButton;
+    Button addChatButton;
 
     private List peers = new ArrayList();
+    private String deviceInf = "";
 
     @Override
     public View onCreateView(LayoutInflater inflater, final ViewGroup container, Bundle savedInstanceState) {
+
+
 
 
         mManager = (WifiP2pManager) getActivity().getSystemService(Context.WIFI_P2P_SERVICE);
@@ -76,6 +86,25 @@ public class Connectivity extends Fragment implements PeerListListener, Connecti
 
         SingletClass.setConnectivity(this);
         chatButton = (Button) v.findViewById(R.id.go_chat);
+        addChatButton = (Button)  v.findViewById(R.id.add_chat);
+        addChatButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Device device = SingletClass.getDevice();
+                if(device != null)
+                {
+                    Log.d("WDChat","deviceinf_connectivity: " + deviceInf);
+                    String nick = device.getNick(deviceInf);
+                    Log.d("WDChat","nick_connectivity: " + nick);
+                    if(nick != null) {
+                        device.addChat(nick);
+                        Toast.makeText(getActivity(), "Chat added",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                    //if(device.checkChat())
+                }
+            }
+        });
         chatButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -181,25 +210,43 @@ public class Connectivity extends Fragment implements PeerListListener, Connecti
 
     @Override
     public void onConnectionInfoAvailable(final WifiP2pInfo info) {
-        enableChatButton();
+        //System.setProperty("http.proxyHost","192.168.49.3");
+        //Log.d("WDChat","proxy: " + System.getProperty("http.proxyHost"));
+        //WifiManager m = (WifiManager) getActivity().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        //m.getConfiguredNetworks();
+        //WifiConfiguration conf = new WifiConfiguration();
+        //conf.setHttpProxy();
+        //enableChatButton();
         String name = SingletClass.getDeviceName();
         if (info.groupFormed && info.isGroupOwner) {
             Toast.makeText(getActivity(), "Connection established. I am group owner",
                     Toast.LENGTH_SHORT).show();
             if(SingletClass.getDevice() == null) {
-                Device device = new Device(name,info.groupOwnerAddress.getHostAddress(),true, getContext());
-                SingletClass.setDevice(device);
+                Intent intent = new Intent(getActivity(), MessageService.class);
+                intent.putExtra("name",name);
+                intent.putExtra("address",info.groupOwnerAddress.getHostAddress());
+                intent.putExtra("isAdmin",true);
+                getActivity().startService(intent);
+                //SingletClass.getConnectivity().
+                //startService(new Intent(this, MessageService.class));
+                //Device device = new Device(name,info.groupOwnerAddress.getHostAddress(),true, getContext());
+                //SingletClass.setDevice(device);
             }
 
         } else if (info.groupFormed) {
             Toast.makeText(getActivity(), "Connection established. I am not a group owner",
                     Toast.LENGTH_SHORT).show();
             if(SingletClass.getDevice() == null) {
-                Device device = new Device(name, info.groupOwnerAddress.getHostAddress(),false, getContext());
-                SingletClass.setDevice(device);
+                Intent intent = new Intent(getActivity(), MessageService.class);
+                intent.putExtra("name",name);
+                intent.putExtra("address",info.groupOwnerAddress.getHostAddress());
+                intent.putExtra("isAdmin",false);
+                getActivity().startService(intent);
+                //Device device = new Device(name, info.groupOwnerAddress.getHostAddress(),false, getContext());
+                //SingletClass.setDevice(device);
             }
-            Intent intent = new Intent(getActivity(), ChatActivity.class);
-            startActivity(intent);
+            /*Intent intent = new Intent(getActivity(), ChatActivity.class);
+            startActivity(intent);*/
         }
     }
 
@@ -207,6 +254,7 @@ public class Connectivity extends Fragment implements PeerListListener, Connecti
     {
         connectButton.setEnabled(true);
         deviceInfo.setText(deviceName);
+        deviceInf = deviceName;
         deviceInfoStatus.setText(deviceStatus);
     }
 
@@ -232,11 +280,13 @@ public class Connectivity extends Fragment implements PeerListListener, Connecti
 
 
 
+
         mManager.connect(mChannel, config, new ActionListener() {
 
             @Override
             public void onSuccess() {
                 // WiFiDirectBroadcastReceiver will notify us. Ignore for now.
+                addChatButton.setEnabled(true);
             }
 
             @Override
@@ -247,9 +297,9 @@ public class Connectivity extends Fragment implements PeerListListener, Connecti
         });
     }
 
-    public void enableChatButton()
+    /*public void enableChatButton()
     {
         chatButton.setEnabled(true);
-    }
+    }*/
 
 }

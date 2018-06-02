@@ -16,6 +16,12 @@
         android:enabled="false"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
+    <Button
+        android:id="@+id/add_chat"
+        android:enabled="false"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Add to Chat" />
 
     <TextView
         android:id="@+id/device_info"
@@ -33,7 +39,7 @@
         android:id="@+id/go_chat"
         android:text="@string/chat_button"
         android:layout_marginLeft="270dp"
-        android:enabled="false"
+        android:enabled="true"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 

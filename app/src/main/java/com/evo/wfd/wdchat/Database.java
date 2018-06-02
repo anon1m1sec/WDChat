@@ -11,17 +11,21 @@ public class Database extends SQLiteOpenHelper{
 
     public Database(Context context)
     {
-        super(context,"WDChatDB",null,1);
+        super(context,"WDChatDB",null,17);
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE ACCOUNTS (ID INTEGER PRIMARY KEY AUTOINCREMENT, NICKNAME);");
         db.execSQL("CREATE TABLE CHAT (ID INTEGER PRIMARY KEY AUTOINCREMENT, NICKNAME, DEVICE_NAME);");
+        db.execSQL("CREATE TABLE MESSAGES (ID INTEGER PRIMARY KEY AUTOINCREMENT, NICKNAME, MESSAGE);");
+        //db.execSQL("DELETE FROM MESSAGES WHERE ID>0");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-
+        //db.execSQL("");
+        db.execSQL("DELETE FROM MESSAGES WHERE ID>0");
+        db.execSQL("DELETE FROM CHAT WHERE ID>0");
     }
 }
