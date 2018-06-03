@@ -1,4 +1,4 @@
-package com.evo.wfd.wdchat;
+package com.ts.wfd.chat;
 
 import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;

@@ -52,7 +52,7 @@
         android:text="@string/connect_banner" />
 
     <fragment
-        class="com.evo.wfd.wdchat.ConnectivityFragment"
+        class="com.ts.wfd.chat.ConnectivityFragment"
         android:id="@+id/fragment_id"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">

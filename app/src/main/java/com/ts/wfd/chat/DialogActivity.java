@@ -1,4 +1,4 @@
-package com.evo.wfd.wdchat;
+package com.ts.wfd.chat;
 
 import android.support.v4.app.Fragment;
 
